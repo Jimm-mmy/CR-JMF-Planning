@@ -259,7 +259,7 @@
     <script>
 	
 	// Configuration
-	const useGoogleDrive = false; // Set to true for Google Drive integration in the future
+	const useGoogleDrive = true; // Set to true for Google Drive integration in the future
 	const CLIENT_ID = '160403403367-umblt70r7hubstt6oio9hek6hgqeu97g.apps.googleusercontent.com'; // Your client ID
 	const API_KEY = 'AIzaSyB_j2dcVW_9MiOrYTvjtqmbaeY3dqLObNk'; // Replace with your API key
 	const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'];
@@ -288,7 +288,7 @@
     }).catch(error => console.error('Error initializing Google API client:', error));
 }
 
-		function loadSpotsFromDrive() {
+	function loadSpotsFromDrive() {
     return new Promise((resolve, reject) => {
         // Fetch the file list and look for 'spots.json'
         gapi.client.drive.files.list({
@@ -585,7 +585,7 @@ function saveSpotsToFile(spots) {
 
 			console.log("Dropdowns updated with sorted spots.");
 }
-        function initMap() {
+   function initMap() {
     // Initialize the map centered on Kyiv
     map = new google.maps.Map(document.getElementById("map"), {
         zoom: 12,
@@ -605,15 +605,15 @@ function saveSpotsToFile(spots) {
                 addMarker(spot, index);
             });
 
+            // Populate the dropdowns after the spots are loaded
+            populateDropdowns();
+
             console.log(`${spots.length} spots loaded and added to the map.`);
         })
         .catch(error => {
             console.error("Error loading spots:", error);
         });
 }
-
-    populateDropdowns(); // Populate the dropdowns after the spots are loaded
-
 
         function addMarker(spot, index) {
             const marker = new google.maps.Marker({
@@ -722,8 +722,6 @@ function saveSpotsToFile(spots) {
                 reader.readAsText(file);
             }
         }
-	loadSpotsFromFile(spots => console.log("Fetched spots:", spots));
-
     </script>
 </head>
 <body onload="handleClientLoad()">
