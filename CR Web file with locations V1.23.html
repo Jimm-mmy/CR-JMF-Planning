@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Editable Spots Map</title>
+<script src="https://apis.google.com/js/api.js"></script>
+<style>
+    /* Shared bar style for top and bottom bars */
+    .bar {
+        height: 50px; /* Default height */
+        display: flex;
+        align-items: center; /* Center items vertically */
+        gap: 10px; /* Space between elements */
+        padding: 10px; /* Inner padding */
+        background: #ADD8E6; /* Light blue background */
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2); /* Light shadow effect */
+    }
+
+    /* Specific styling for the map */
+    #map {
+    position: absolute; /* Ensure the map adapts dynamically */
+    top: 50px; /* Start just after the top bar */
+    left: 0; /* Full width */
+    width: 100%; /* Full width */
+    bottom: 0; /* Extend to the bottom of the screen by default */
+    z-index: 1; /* Ensure it sits behind bars */
+    height: calc(100vh - 50px); /* Default height calculation (top bar) */
+}
+
+    /* Top bar styling */
+#controls {
+    position: fixed; /* Keep the bar fixed at the top */
+    top: 0; /* Align flush with the top of the page */
+    left: 0; /* Ensure it spans from the very left edge */
+    width: 100%; /* Full width of the screen */
+    height: 50px; /* Match the height of the bottom bar */
+    display: flex; /* Arrange elements in a row */
+    justify-content: space-between; /* Spread buttons and dropdowns evenly */
+    align-items: center; /* Center items vertically */
+    gap: 10px; /* Space between elements */
+    padding: 10px; /* Match the padding of the bottom bar */
+    background: #ADD8E6; /* Light blue background */
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2); /* Add shadow for depth */
+    box-sizing: border-box; /* Include padding in size calculations */
+    z-index: 1000; /* Ensure it stays above other elements */
+    margin: 0; /* Remove unnecessary margins */
+}
+
+#controls button, #controls select {
+    height: 30px; /* Uniform button and dropdown height */
+    padding: 5px 10px; /* Consistent inner spacing */
+    background: #ffffff; /* White background for contrast */
+    border: 1px solid #87CEEB; /* Light blue border */
+    border-radius: 4px; /* Rounded corners for aesthetics */
+    color: #000; /* Black text */
+    font-size: 14px; /* Readable font size */
+    cursor: pointer; /* Pointer cursor for interactivity */
+}
+
+#controls button:hover {
+    background: #87CEEB; /* Slightly darker blue on hover */
+    color: #fff; /* White text on hover */
+}
+
+/* Ensure dropdowns and buttons are vertically aligned */
+#controls select, #controls button {
+    height: 40px; /* Match all elements to the same height */
+    padding: 5px 10px; /* Adjust padding for consistency */
+    font-size: 14px; /* Ensure readable text */
+    line-height: 1; /* Align text properly */
+    background: #ffffff; /* White background for contrast */
+    border: 1px solid #87CEEB; /* Light blue border */
+    border-radius: 4px; /* Rounded corners for aesthetics */
+    color: #000; /* Black text for readability */
+    cursor: pointer; /* Pointer cursor for buttons */
+}
+
+/* Hover effect for buttons in top bar */
+#controls button:hover {
+    background: #87CEEB; /* Slightly darker blue on hover */
+    color: #fff; /* White text on hover */
+}
+
+/* Dropdown styling */
+#controls select {
+    background: #ffffff; /* White background for dropdowns */
+    color: #000; /* Black text */
+}
+
+    #controls button {
+        padding: 5px 10px; /* Ensure buttons are a consistent size */
+        background: #ffffff; /* White background for contrast */
+        border: 1px solid #87CEEB; /* Light blue border */
+        border-radius: 4px; /* Rounded corners for aesthetics */
+        color: #000; /* Black text */
+        cursor: pointer; /* Pointer cursor for buttons */
+    }
+
+    #controls button:hover {
+        background: #87CEEB; /* Slightly darker blue on hover */
+        color: #fff; /* White text on hover */
+    }
+
+    /* Search Dropdown Styling */
+    #search-dropdown {
+        flex: 1; /* Allow the dropdown to take up remaining space */
+        background: #ffffff; /* White background for contrast */
+        border: 1px solid #87CEEB; /* Slightly darker blue border for definition */
+        padding: 5px; /* Inner padding for text */
+        border-radius: 4px; /* Rounded edges for aesthetics */
+        color: #000; /* Black text for readability */
+    }
+
+    #search-dropdown option {
+        background: #ffffff; /* White background for dropdown options */
+        color: #000; /* Black text in dropdown options */
+    }
+
+    /* Bottom bar specific styling */
+    #route-planner {
+        position: absolute;
+        bottom: 0;
+        left: 50%; /* Centre horizontally */
+        transform: translateX(-50%); /* Offset to align perfectly */
+        width: 60%; /* Occupy 60% the screen width */
+        display: flex; /* Ensure elements align horizontally */
+        gap: 10px; /* Space between buttons and dropdowns */
+        align-items: center; /* Center items vertically */
+        background: #ADD8E6; /* Light blue background */
+        padding: 10px; /* Inner spacing */
+        box-shadow: 0px -2px 5px rgba(0, 0, 0, 0.2); /* Light shadow */
+        border-radius: 8px; /* Rounded corners for aesthetics */
+        flex-wrap: nowrap; /* Prevent wrapping */
+        height: auto; /* Automatically adjust height */
+        min-height: 50px; /* Ensure it doesn’t shrink below 50px */
+        box-sizing: border-box; /* Include padding and border in size calculations */
+		z-index: 1000; /* Ensure it stays above the map */
+}
+    }
+
+    /* Dropdown container styling */
+    #dropdown-container {
+        flex: 4; /* Allocate 40% of the width */
+        display: flex;
+        gap: 10px; /* Space between dropdowns */
+        align-items: center; /* Vertically align dropdowns */
+    }
+
+    /* Button container styling */
+    #button-container {
+        flex: 1; /* Allocate 25% of the width */
+        display: flex;
+        gap: 10px; /* Space between buttons */
+        justify-content: flex-end; /* Align buttons to the right */
+        align-items: center; /* Center buttons vertically */
+        height: 100%; /* Match parent container height */
+        position: relative; /* Ensure child elements respect container boundaries */
+        overflow: hidden; /* Prevent content from spilling outside */
+    }
+
+    /* Dropdown styling */
+    #route-planner select {
+        flex: 1; /* Dropdowns share available space equally */
+        background: #ffffff; /* White background for contrast */
+        border: 1px solid #87CEEB; /* Light blue border */
+        padding: 5px; /* Inner spacing */
+        border-radius: 4px; /* Rounded edges */
+        color: #000; /* Black text for readability */
+    }
+
+    /* Button styling */
+    #route-planner button {
+        padding: 5px 10px; /* Ensure buttons have appropriate size */
+        background: #ffffff; /* White background for contrast */
+        border: 1px solid #87CEEB; /* Light blue border */
+        border-radius: 4px; /* Rounded corners */
+        color: #000; /* Black text */
+        cursor: pointer; /* Pointer cursor for buttons */
+        height: auto; /* Ensure the button height doesn't cause misalignment */
+        max-height: 50px; /* Prevent the button from exceeding the container height */
+        box-sizing: border-box; /* Ensure padding doesn't add to size */
+    }
+
+    /* Hover effect for buttons */
+    #route-planner button:hover {
+        background: #87CEEB; /* Slightly darker blue on hover */
+        color: #fff; /* White text on hover */
+    }
+
+    @media (max-width: 768px) {
+
+    #map {
+        position: absolute; /* Ensure the map adapts dynamically */
+        top: 50px; /* Start just after the top bar */
+        bottom: 50px; /* End just above the bottom bar */
+        left: 0; /* Align with the left edge */
+        width: 100%; /* Full width */
+        height: calc(100vh - 100px); /* Account for both top and bottom bars */
+        z-index: 1; /* Ensure it sits behind other elements */
+    }
+
+    .bar {
+        height: auto; /* Allow height to adjust for multiple rows */
+        padding: 10px; /* Add consistent padding */
+    }
+
+    /* Top bar for smaller screens */
+    #controls {
+    flex-wrap: wrap; /* Allow elements to wrap */
+    justify-content: center; /* Center elements horizontally */
+    align-items: center; /* Align elements vertically */
+    height: auto; /* Allow height to expand for multiple rows */
+    padding: 10px; /* Consistent padding */
+    gap: 10px; /* Space between elements */
+    background: #ADD8E6; /* Light blue background */
+    z-index: 1000; /* Ensure it stays above the map */
+}
+
+    #controls button, #controls select {
+        height: 36px; /* Consistent button and dropdown height */
+        width: auto; /* Allow natural width */
+        padding: 5px 10px; /* Inner padding for balance */
+        font-size: 14px; /* Maintain readability */
+    }
+
+    #controls select {
+        flex: 1; /* Dropdown takes full width in its row */
+        max-width: 100%; /* Prevent overflow */
+    }
+
+    #controls button {
+        flex: none; /* Buttons retain natural size */
+    }
+
+    /* Bottom bar for smaller screens */
+    #route-planner {
+    left: 0; /* Align to the left */
+    transform: none; /* Remove centring */
+    width: 100%; /* Full width for smaller screens */
+    flex-wrap: wrap; /* Allow wrapping */
+    height: auto; /* Allow height to adjust dynamically */
+    z-index: 1000; /* Ensure it stays above the map */
+}
+
+    #route-planner select, #route-planner button {
+        width: 100%; /* Full width for dropdowns and buttons */
+        height: 36px; /* Consistent height with other elements */
+    }
+
+    #dropdown-container, #button-container {
+        flex: none; /* Remove proportional widths */
+        width: 100%; /* Full width for each container */
+        margin-bottom: 10px; /* Space between rows */
+    }
+}
+
+
+</style>
+
+    <script>
+	
+	// Configuration
+	const useGoogleDrive = false; // Set to true for Google Drive integration in the future
+	const CLIENT_ID = '160403403367-umblt70r7hubstt6oio9hek6hgqeu97g.apps.googleusercontent.com'; // Your client ID
+	const API_KEY = 'AIzaSyB_j2dcVW_9MiOrYTvjtqmbaeY3dqLObNk'; // Replace with your API key
+	const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'];
+	const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+	let authInstance;
+
+	function handleClientLoad() {
+		gapi.load('client:auth2', initClient);
+	}
+
+	function initClient() {
+    gapi.client.init({
+        apiKey: API_KEY,
+        clientId: "160403403367-umblt70r7hubstt6oio9hek6hgqeu97g.apps.googleusercontent.com",
+        discoveryDocs: DISCOVERY_DOCS,
+        scope: SCOPES,
+		cookiePolicy: "single_host_origin",
+    }).then(() => {
+        authInstance = gapi.auth2.getAuthInstance();
+        if (!authInstance.isSignedIn.get()) {
+            authInstance.signIn().then(() => initSpots());
+        } else {
+            initSpots();
+        }
+    }).catch(error => console.error('Error initializing Google API client:', error));
+}
+
+		function loadSpotsFromDrive() {
+    return new Promise((resolve, reject) => {
+        // Fetch the file list and look for 'spots.json'
+        gapi.client.drive.files.list({
+            q: "name='spots.json'",
+            fields: 'files(id, name)',
+        }).then(response => {
+            const file = response.result.files[0];
+            if (file) {
+                // Fetch the content of the file
+                gapi.client.drive.files.get({
+                    fileId: file.id,
+                    alt: 'media',
+                }).then(fileResponse => {
+                    try {
+                        // Parse and process spot data
+                        const spotsData = JSON.parse(fileResponse.body);
+                        spots = spotsData.categories.flatMap(category => category.spots);
+
+                        // Ensure dependent functions are properly implemented
+                        if (typeof populateDropdowns === "function") {
+                            populateDropdowns();
+                        } else {
+                            console.warn("populateDropdowns function is missing.");
+                        }
+
+                        if (typeof initMap === "function") {
+                            initMap();
+                        } else {
+                            console.warn("initMap function is missing.");
+                        }
+
+                        resolve();
+                    } catch (parseError) {
+                        console.error("Error parsing file content:", parseError);
+                        reject(parseError);
+                    }
+                }).catch(error => {
+                    console.error("Error fetching file content:", error);
+                    reject(error);
+                });
+            } else {
+                console.error("spots.json file not found in Google Drive.");
+                reject("File not found");
+            }
+        }).catch(error => {
+            console.error("Error fetching file from Google Drive:", error);
+            reject(error);
+        });
+    });
+}
+
+	function saveSpotsToDrive(spots) {
+		const data = JSON.stringify(spots, null, 2);
+		const blob = new Blob([data], { type: 'application/json' });
+
+		const metadata = {
+			name: 'spots.json',
+			mimeType: 'application/json',
+		};
+
+		const form = new FormData();
+		form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+		form.append('file', blob);
+
+		gapi.client.request({
+			path: '/upload/drive/v3/files',
+			method: 'POST',
+			params: { uploadType: 'multipart' },
+			body: form,
+		}).then(response => {
+			console.log('File saved to Google Drive:', response);
+		}).catch(error => console.error('Error saving file to Google Drive:', error));
+	}
+
+	window.onload = handleClientLoad;
+
+function saveSpotsToFile(spots) {
+    const dataStr = JSON.stringify(spots, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "spots.json";
+    a.click();
+}
+
+        let map;
+        let markers = [];
+        
+		let spots = [];
+
+		function initSpots() {
+			if (useGoogleDrive) {
+				loadSpotsFromGoogleDrive().then(data => {
+					spots = data;
+					initMap(); // Ensure spots are added to the map after loading
+				});
+			} else {
+				loadSpotsFromFile(data => {
+					spots = data;
+					initMap(); // Ensure spots are added to the map after loading
+				});
+			}
+		}
+
+		function populateDropdowns() {
+			const originDropdown = document.getElementById("origin");
+			const destinationDropdown = document.getElementById("destination");
+			const searchDropdown = document.getElementById("search-dropdown");
+
+			// Sort spots alphabetically by name
+			const sortedSpots = [...spots].sort((a, b) => a.name.localeCompare(b.name));
+
+			sortedSpots.forEach((spot) => {
+				const option = document.createElement("option");
+				option.value = `${spot.lat},${spot.lng}`;
+				option.textContent = spot.name;
+
+				// Add to route planner dropdowns
+				originDropdown.appendChild(option.cloneNode(true));
+				destinationDropdown.appendChild(option.cloneNode(true));
+
+				// Add to search dropdown
+				searchDropdown.appendChild(option);
+			});
+		}
+
+		// Store a reference to the DirectionsRenderer
+		let directionsRenderer = null;
+
+		function calculateRoute() {
+			const originValue = document.getElementById("origin").value;
+			const destinationValue = document.getElementById("destination").value;
+
+			if (!originValue || !destinationValue) {
+				alert("Please select both an origin and a destination.");
+				return;
+			}
+
+			const [originLat, originLng] = originValue.split(",").map(Number);
+			const [destinationLat, destinationLng] = destinationValue.split(",").map(Number);
+
+			// Filter markers to hide irrelevant ones
+			markers.forEach((marker, index) => {
+				const spot = spots[index];
+
+				// Define criteria for markers to remain visible
+				const isVisible =
+					(spot.lat === originLat && spot.lng === originLng) || // Origin
+					(spot.lat === destinationLat && spot.lng === destinationLng) || // Destination
+					["blue", "black", "red", "yellow"].includes(spot.color.toLowerCase()); // Specified colours
+
+				marker.setVisible(isVisible); // Show/hide markers
+			});
+
+			// Create route using Directions API
+			const directionsService = new google.maps.DirectionsService();
+			const directionsRenderer = new google.maps.DirectionsRenderer({
+				map: map,
+				polylineOptions: {
+					strokeColor: "#00008B", // Deep blue colour
+					strokeOpacity: 1.0, // Full opacity
+					strokeWeight: 6, // Line thickness
+				},
+			});
+
+			const routeRequest = {
+				origin: { lat: originLat, lng: originLng },
+				destination: { lat: destinationLat, lng: destinationLng },
+				travelMode: "DRIVING",
+			};
+
+			directionsService.route(routeRequest, (result, status) => {
+				if (status === "OK") {
+					directionsRenderer.setDirections(result);
+				} else {
+					alert("Could not calculate route: " + status);
+				}
+			});
+
+			// Store directionsRenderer globally to clear the route later
+			window.directionsRenderer = directionsRenderer;
+		}
+
+		function resetRoute() {
+			if (window.directionsRenderer) {
+				window.directionsRenderer.setMap(null); // Remove the route
+				window.directionsRenderer = null; // Clear the reference
+			}
+
+			// Re-show all markers
+			markers.forEach(marker => {
+				marker.setVisible(true);
+			});
+
+			// Reset dropdowns
+			document.getElementById("origin").value = "";
+			document.getElementById("destination").value = "";
+		}
+
+		function addSpot() {
+			const name = prompt("Enter spot name:");
+			const mgrs = prompt("Enter MGRS (optional):");
+			const lat = parseFloat(prompt("Enter latitude:"));
+			const lng = parseFloat(prompt("Enter longitude:"));
+			let color = prompt("Enter a colour for the spot (e.g., red, blue, green):");
+
+			// Validate inputs
+			if (!name || isNaN(lat) || isNaN(lng)) {
+				alert("Invalid input. Spot not added.");
+				return;
+			}
+
+			// Default color
+			if (!color || color.trim() === "") {
+				color = "green";
+			}
+
+			// Create the new spot object
+			const newSpot = {
+				lat,
+				lng,
+				color,
+				name,
+				mgrs: mgrs || "N/A",
+				info: {
+					addedBy: "localUser", // Placeholder; integrate Google account later
+				},
+			};
+
+			// Check for duplicates
+			if (spots.some(spot => spot.lat === lat && spot.lng === lng)) {
+				alert("Duplicate spot detected. Not added.");
+				return;
+			}
+
+			// Add the spot and update the file
+			spots.push(newSpot);
+			addMarker(newSpot, spots.length - 1);
+
+			if (useGoogleDrive) {
+				saveSpotsToGoogleDrive(spots);
+			} else {
+				saveSpotsToFile(spots);
+			}
+
+			alert(`Spot '${name}' added successfully.`);
+		}
+		function saveSpotsToFileWithComments(spots) {
+			const comment = `
+			// Spots are categorised by colour:
+			// GREEN SPOTS
+			`;
+			const dataStr = comment + JSON.stringify(spots, null, 2);
+			const blob = new Blob([dataStr], { type: "application/json" });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = "spots.json";
+			a.click();
+		}
+
+		function updateDropdowns() {
+			const searchDropdown = document.getElementById("search-dropdown");
+			const originDropdown = document.getElementById("origin");
+			const destinationDropdown = document.getElementById("destination");
+
+			if (!searchDropdown || !originDropdown || !destinationDropdown) {
+				console.error("One or more dropdown elements are missing.");
+				return;
+			}
+
+			// Clear existing dropdown options
+			[searchDropdown, originDropdown, destinationDropdown].forEach(dropdown => {
+				dropdown.innerHTML = '<option value="" disabled selected>Select Spot</option>';
+			});
+
+			// Sort spots alphabetically by name
+			const sortedSpots = [...spots].sort((a, b) => a.name.localeCompare(b.name));
+
+			// Populate dropdowns
+			sortedSpots.forEach((spot) => {
+				const option = document.createElement("option");
+				option.value = `${spot.lat},${spot.lng}`;
+				option.textContent = spot.name;
+
+				// Log for debugging
+				console.log("Adding option to dropdown:", option.textContent);
+
+				searchDropdown.appendChild(option.cloneNode(true));
+				originDropdown.appendChild(option.cloneNode(true));
+				destinationDropdown.appendChild(option);
+			});
+
+			console.log("Dropdowns updated with sorted spots.");
+}
+        function initMap() {
+    // Initialize the map centered on Kyiv
+    map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 12,
+        center: { lat: 50.4501, lng: 30.5234 }, // Adjust as needed
+    });
+
+    // Fetch spots from Google Drive and add markers
+    loadSpotsFromDrive()
+        .then(() => {
+            if (!spots || spots.length === 0) {
+                console.error("No spots loaded to display on the map.");
+                return;
+            }
+
+            // Add markers for all spots
+            spots.forEach((spot, index) => {
+                addMarker(spot, index);
+            });
+
+            console.log(`${spots.length} spots loaded and added to the map.`);
+        })
+        .catch(error => {
+            console.error("Error loading spots:", error);
+        });
+}
+
+    populateDropdowns(); // Populate the dropdowns after the spots are loaded
+
+
+        function addMarker(spot, index) {
+            const marker = new google.maps.Marker({
+                position: { lat: spot.lat, lng: spot.lng },
+                map: map,
+                title: spot.name,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    fillColor: spot.color,
+                    fillOpacity: 1,
+                    scale: 8,
+                    strokeColor: "white",
+                    strokeWeight: 2,
+                },
+            });
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: `<strong>${spot.name}</strong><br>MGRS: ${spot.mgrs}`,
+            });
+
+            marker.addListener("click", () => {
+                infoWindow.open(map, marker);
+            });
+
+            markers.push(marker);
+        }
+		/*** SEARCH FUNCTIONALITY ADDED HERE ***/
+// Search bar functionality: Handles search by name, MGRS, or coordinates
+		function handleSearch() {
+			const query = document.getElementById("search-dropdown").value;
+
+			if (!query) {
+				alert("Please select a spot to search.");
+				return;
+			}
+
+			const [lat, lng] = query.split(",").map(Number);
+
+			// Center the map and zoom to the spot
+			map.setCenter({ lat, lng });
+			map.setZoom(15);
+
+			// Find the matching spot in the spots array
+			const match = spots.find(spot => spot.lat === lat && spot.lng === lng);
+			if (match) {
+				const markerIndex = spots.indexOf(match);
+				const marker = markers[markerIndex];
+
+				// Reuse or create an InfoWindow and open it on the marker
+				if (!window.infoWindow) {
+					window.infoWindow = new google.maps.InfoWindow();
+				}
+
+				window.infoWindow.setContent(`<strong>${match.name}</strong><br>MGRS: ${match.mgrs}`);
+				window.infoWindow.open(map, marker); // Open the info window
+			} else {
+				alert("Spot not found.");
+			}
+		}
+
+/*** END OF SEARCH FUNCTIONALITY ***/
+
+        function addSpot() {
+            const name = prompt("Enter the spot name:");
+            const lat = parseFloat(prompt("Enter latitude:"));
+            const lng = parseFloat(prompt("Enter longitude:"));
+            const color = prompt("Enter marker color (e.g., red, blue, green):");
+            const mgrs = prompt("Enter MGRS coordinates:");
+
+            if (name && !isNaN(lat) && !isNaN(lng) && color && mgrs) {
+                const newSpot = { lat, lng, color, name, mgrs };
+                spots.push(newSpot);
+                addMarker(newSpot, spots.length - 1);
+                alert("Spot added!");
+            } else {
+                alert("Invalid input. Please try again.");
+            }
+        }
+
+        function exportSpots() {
+            const dataStr = JSON.stringify(spots, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "spots.json";
+            a.click();
+        }
+
+        function importSpots(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        const importedSpots = JSON.parse(reader.result);
+                        importedSpots.forEach(spot => {
+                            spots.push(spot);
+                            addMarker(spot, spots.length - 1);
+                        });
+                        alert("Spots imported successfully!");
+                    } catch (err) {
+                        alert("Invalid JSON file.");
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+	loadSpotsFromFile(spots => console.log("Fetched spots:", spots));
+
+    </script>
+</head>
+<body onload="handleClientLoad()">
+<div id="controls" class="bar">
+    <select id="search-dropdown">
+        <option value="" disabled selected>Select Spot</option>
+    </select>
+    <button onclick="handleSearch()">Search</button>
+    <button onclick="addSpot()">Add Spot</button>
+    <button onclick="exportSpots()">Export Spots</button>
+    <button onclick="updateDropdowns()">Update Dropdowns</button>
+    <input type="file" onchange="importSpots(event)" accept=".json">
+</div>
+<div id="map"></div>
+
+    <!-- Route Planning Bar -->
+<div id="route-planner" class="bar">
+    <div id="dropdown-container">
+        <select id="origin">
+            <option value="" disabled selected>Select Origin</option>
+        </select>
+        <select id="destination">
+            <option value="" disabled selected>Select Destination</option>
+        </select>
+    </div>
+    <div id="button-container">
+        <button onclick="calculateRoute()">Get Route</button>
+        <button onclick="resetRoute()">Reset</button>
+    </div>
+</div>
+
+</div>
+
+</body>
+
+</html>
+
