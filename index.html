@@ -278,23 +278,29 @@
 }
 
 	function initClient() {
-    gapi.client.init({
-        apiKey: API_KEY,
-        clientId: "160403403367-umblt70r7hubstt6oio9hek6hgqeu97g.apps.googleusercontent.com",
-        discoveryDocs: DISCOVERY_DOCS,
-        scope: SCOPES,
-		cookiePolicy: "single_host_origin",
-    }).then(() => {
-        authInstance = gapi.auth2.getAuthInstance();
-        if (!authInstance.isSignedIn.get()) {
-            authInstance.signIn().then(() => initSpots());
-        } else {
+    console.log("Initializing client...");
+gapi.client.init({
+    apiKey: API_KEY,
+    clientId: CLIENT_ID,
+    discoveryDocs: DISCOVERY_DOCS,
+    scope: SCOPES
+}).then(() => {
+    console.log("Client initialized successfully.");
+    authInstance = gapi.auth2.getAuthInstance();
+    if (!authInstance.isSignedIn.get()) {
+        authInstance.signIn().then(() => {
+            console.log("User signed in.");
             initSpots();
-        }
-    }).catch(error => {
-        console.error('Error initializing Google API client:', error);
-        alert(`Error initializing Google API client: ${JSON.stringify(error)}`);
-    }); //
+        });
+    } else {
+        console.log("User already signed in.");
+        initSpots();
+    }
+}).catch(error => {
+    console.error('Error initializing Google API client:', error);
+    alert(`Error initializing Google API client: ${JSON.stringify(error)}`);
+});
+
 
 	function loadSpotsFromDrive() {
     return new Promise((resolve, reject) => {
