@@ -270,8 +270,11 @@
 	let authInstance;
 
 	function handleClientLoad() {
-    console.log("handleClientLoad called"); // Debugging line
-    gapi.load('client:auth2', initClient);
+    console.log("Loading client and auth2 modules...");
+    gapi.load('client:auth2', () => {
+        console.log("gapi.client and gapi.auth2 loaded successfully");
+        initClient(); // Initialize the client after loading
+    });
 }
 
 	function initClient() {
