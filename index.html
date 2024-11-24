@@ -137,6 +137,7 @@
         box-sizing: border-box; /* Include padding and border in size calculations */
 		z-index: 1000; /* Ensure it stays above the map */
 }
+	
     }
 
     /* Dropdown container styling */
@@ -254,6 +255,7 @@
         margin-bottom: 10px; /* Space between rows */
     }
 }
+	
 
 
 </style>
@@ -300,6 +302,7 @@ gapi.client.init({
     console.error('Error initializing Google API client:', error);
     alert(`Error initializing Google API client: ${JSON.stringify(error)}`);
 });
+	}
 
 
 function loadSpotsFromDrive() {
@@ -390,7 +393,6 @@ function saveSpotsToFile(spots) {
     a.download = "spots.json";
     a.click();
 }
-
         let map;
         let markers = [];
         
@@ -718,6 +720,7 @@ function saveSpotsToFile(spots) {
             a.download = "spots.json";
             a.click();
         }
+}
 
         function importSpots(event) {
     const file = event.target.files[0]; // Get the selected file
