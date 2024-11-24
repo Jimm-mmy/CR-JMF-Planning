@@ -302,7 +302,7 @@ gapi.client.init({
 });
 
 
-	function loadSpotsFromDrive() {
+function loadSpotsFromDrive() {
     return new Promise((resolve, reject) => {
         // Fetch the file list and look for 'spots.json'
         gapi.client.drive.files.list({
@@ -335,7 +335,7 @@ gapi.client.init({
                         }
 
                         resolve();
-                    } .catch (parseError) {
+                    } catch (parseError) { // Correct placement of catch
                         console.error("Error parsing file content:", parseError);
                         reject(parseError);
                     }
@@ -353,6 +353,7 @@ gapi.client.init({
         });
     });
 }
+
 
 	function saveSpotsToDrive(spots) {
 		const data = JSON.stringify(spots, null, 2);
