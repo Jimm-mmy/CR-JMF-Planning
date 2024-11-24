@@ -292,9 +292,9 @@
             initSpots();
         }
     }).catch(error => {
-    console.error('Error initializing Google API client:', error);
-    alert(`Error initializing Google API client: ${JSON.stringify(error)}`);
-}
+        console.error('Error initializing Google API client:', error);
+        alert(`Error initializing Google API client: ${JSON.stringify(error)}`);
+    }); //
 
 	function loadSpotsFromDrive() {
     return new Promise((resolve, reject) => {
