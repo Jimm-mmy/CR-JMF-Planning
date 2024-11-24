@@ -272,38 +272,58 @@
 	let authInstance;
 
 	function handleClientLoad() {
+    // Initialize Google Identity Services
     google.accounts.id.initialize({
         client_id: '160403403367-umblt70r7hubstt6oio9hek6hgqeu97g.apps.googleusercontent.com.apps.googleusercontent.com',  // Replace with your actual client ID
-        callback: handleCredentialResponse
+        callback: handleCredentialResponse,
     });
-
-    // Show the Google One Tap prompt (or the standard sign-in button)
-    google.accounts.id.prompt();
+    google.accounts.id.prompt(); // Prompt user to sign in
 }
 
 function handleCredentialResponse(response) {
-    console.log("Encoded JWT ID token: " + response.credential);
-    // Here you would typically send this token to your backend server for verification.
+    console.log("User signed in successfully, token received.");
+
+    // Extract the access token for use in the Drive API
+    getAccessToken(response.credential);
 }
+
+// Simulated function to obtain access token from JWT for Google Drive API
+function getAccessToken(jwt) {
+    accessToken = jwt;  // Using the JWT as an access token directly for demonstration
+}
+
 
 function loadSpotsFromDrive() {
     return new Promise((resolve, reject) => {
-        // Fetch the file list and look for 'spots.json'
-        gapi.client.drive.files.list({
-            q: "name='spots.json'",
-            fields: 'files(id, name)',
-        }).then(response => {
-            const file = response.result.files[0];
+        if (!accessToken) {
+            console.error("No access token available. Please sign in first.");
+            reject("Authentication required");
+            return;
+        }
+
+        // Set up headers for the API request
+        const headers = new Headers();
+        headers.append("Authorization", "Bearer " + accessToken);
+
+        // Fetch the file list and look for 'spots.json' in Google Drive
+        fetch('https://www.googleapis.com/drive/v3/files?q=name=\'spots.json\'&fields=files(id,name)', {
+            method: 'GET',
+            headers: headers
+        })
+        .then(response => response.json())
+        .then(response => {
+            const file = response.files[0];
             if (file) {
                 // Fetch the content of the file
-                gapi.client.drive.files.get({
-                    fileId: file.id,
-                    alt: 'media',
-                }).then(fileResponse => {
+                fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
+                    method: 'GET',
+                    headers: headers
+                })
+                .then(fileResponse => fileResponse.json())
+                .then(fileContent => {
                     try {
                         // Parse and process spot data
-                        const spotsData = JSON.parse(fileResponse.body);
-                        spots = spotsData.categories.flatMap(category => category.spots);
+                        spots = fileContent.categories.flatMap(category => category.spots);
 
                         // Ensure dependent functions are properly implemented
                         if (typeof populateDropdowns === "function") {
@@ -319,51 +339,68 @@ function loadSpotsFromDrive() {
                         }
 
                         resolve();
-                    } catch (parseError) { // Correct placement of catch
+                    } catch (parseError) {
                         console.error("Error parsing file content:", parseError);
                         reject(parseError);
                     }
-                }).catch(error => {
-                    console.error("Error fetching file content:", error);
+                })
+                .catch(error => {
+                    console.error("Error fetching file content from Google Drive:", error);
                     reject(error);
                 });
             } else {
                 console.error("spots.json file not found in Google Drive.");
                 reject("File not found");
             }
-        }).catch(error => {
+        })
+        .catch(error => {
             console.error("Error fetching file from Google Drive:", error);
             reject(error);
         });
     });
 }
 
+	// Updated saveSpotsToDrive function to save spots using Google Drive API
+function saveSpotsToDrive(spots) {
+    if (!accessToken) {
+        console.error("No access token available. Please sign in first.");
+        alert("Authentication required. Please sign in to save the spots.");
+        return;
+    }
 
+    // Convert spots to JSON format and create a Blob object
+    const data = JSON.stringify(spots, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
 
-	function saveSpotsToDrive(spots) {
-		const data = JSON.stringify(spots, null, 2);
-		const blob = new Blob([data], { type: 'application/json' });
+    // Metadata for Google Drive API
+    const metadata = {
+        name: 'spots.json',
+        mimeType: 'application/json',
+    };
 
-		const metadata = {
-			name: 'spots.json',
-			mimeType: 'application/json',
-		};
+    // Create a FormData object to send metadata and file together
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', blob);
 
-		const form = new FormData();
-		form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-		form.append('file', blob);
-
-		gapi.client.request({
-			path: '/upload/drive/v3/files',
-			method: 'POST',
-			params: { uploadType: 'multipart' },
-			body: form,
-		}).then(response => {
-			console.log('File saved to Google Drive:', response);
-		}).catch(error => console.error('Error saving file to Google Drive:', error));
-	}
-
-	window.onload = handleClientLoad;
+    // Use fetch to make a POST request to Google Drive API to save the file
+    fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: new Headers({
+            'Authorization': 'Bearer ' + accessToken
+        }),
+        body: form
+    })
+    .then(response => response.json())
+    .then(response => {
+        console.log('File saved to Google Drive:', response);
+        alert('Spots have been successfully saved to Google Drive.');
+    })
+    .catch(error => {
+        console.error('Error saving file to Google Drive:', error);
+        alert('Failed to save spots to Google Drive. Please try again.');
+    });
+}
 
 function saveSpotsToFile(spots) {
     const dataStr = JSON.stringify(spots, null, 2);
