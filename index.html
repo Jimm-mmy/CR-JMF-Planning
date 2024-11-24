@@ -272,38 +272,19 @@
 	let authInstance;
 
 	function handleClientLoad() {
-    console.log("Loading client and auth2 modules...");
-    gapi.load('client:auth2', () => {
-        console.log("gapi.client and gapi.auth2 loaded successfully");
-        initClient(); // Initialize the client after loading
+    google.accounts.id.initialize({
+        client_id: '160403403367-umblt70r7hubstt6oio9hek6hgqeu97g.apps.googleusercontent.com.apps.googleusercontent.com',  // Replace with your actual client ID
+        callback: handleCredentialResponse
     });
+
+    // Show the Google One Tap prompt (or the standard sign-in button)
+    google.accounts.id.prompt();
 }
 
-	function initClient() {
-    console.log("Initializing client...");
-gapi.client.init({
-    apiKey: API_KEY,
-    clientId: CLIENT_ID,
-    discoveryDocs: DISCOVERY_DOCS,
-    scope: SCOPES
-}).then(() => {
-    console.log("Client initialized successfully.");
-    authInstance = gapi.auth2.getAuthInstance();
-    if (!authInstance.isSignedIn.get()) {
-        authInstance.signIn().then(() => {
-            console.log("User signed in.");
-            initSpots();
-        });
-    } else {
-        console.log("User already signed in.");
-        initSpots();
-    }
-}).catch(error => {
-    console.error('Error initializing Google API client:', error);
-    alert(`Error initializing Google API client: ${JSON.stringify(error)}`);
-});
-	}
-
+function handleCredentialResponse(response) {
+    console.log("Encoded JWT ID token: " + response.credential);
+    // Here you would typically send this token to your backend server for verification.
+}
 
 function loadSpotsFromDrive() {
     return new Promise((resolve, reject) => {
@@ -398,21 +379,30 @@ function saveSpotsToFile(spots) {
         
 		let spots = [];
 
-		function initSpots() {
-			if (useGoogleDrive) {
-				loadSpotsFromGoogleDrive().then(data => {
-					spots = data;
-					initMap(); // Ensure spots are added to the map after loading
-				});
-			} else {
-				loadSpotsFromFile(data => {
-					spots = data;
-					initMap(); // Ensure spots are added to the map after loading
-				});
-			}
-		}
+function initSpots() {
+    console.log("Initializing spots after authentication...");
 
-		function populateDropdowns() {
+    if (useGoogleDrive) {
+        loadSpotsFromDrive()
+            .then(() => {
+                if (!spots || spots.length === 0) {
+                    console.warn("No spots found. Initializing empty list.");
+                    spots = [];
+                }
+                populateDropdowns();
+                initMap();
+            })
+            .catch(error => {
+                console.error("Error loading spots from Google Drive:", error);
+                alert("Failed to load spots from Google Drive.");
+            });
+    } else {
+        console.log("Google Drive integration is disabled. Loading from local...");
+    }
+}
+
+
+function populateDropdowns() {
 			const originDropdown = document.getElementById("origin");
 			const destinationDropdown = document.getElementById("destination");
 			const searchDropdown = document.getElementById("search-dropdown");
