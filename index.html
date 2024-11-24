@@ -720,24 +720,24 @@ function saveSpotsToFile(spots) {
         }
 
         function importSpots(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    try {
-                        const importedSpots = JSON.parse(reader.result);
-                        importedSpots.forEach(spot => {
-                            spots.push(spot);
-                            addMarker(spot, spots.length - 1);
-                        });
-                        alert("Spots imported successfully!");
-                    } .catch (err) {
-                        alert("Invalid JSON file.");
-                    }
-                };
-                reader.readAsText(file);
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const importedSpots = JSON.parse(reader.result);
+                importedSpots.forEach(spot => {
+                    spots.push(spot);
+                    addMarker(spot, spots.length - 1);
+                });
+                alert("Spots imported successfully!");
+            } catch (err) { // Properly placed catch block
+                alert("Invalid JSON file.");
             }
-        }
+        };
+        reader.readAsText(file);
+    }
+}
     </script>
 </head>
 <body onload="handleClientLoad()">
